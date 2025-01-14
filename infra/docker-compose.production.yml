@@ -20,7 +20,7 @@ services:
       - db
   frontend:
     container_name: foodgram-front
-    image: foodgram_frontend
+    image: namari39/foodgram_frontend
     command: cp -r /app/build/. /static/
     volumes:
       - static:/static
