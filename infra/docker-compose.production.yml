@@ -26,6 +26,7 @@ services:
       - static:/static
   nginx:
     container_name: foodgram-proxy
+    env_file: .env
     image: namari39/foodgram_gateway
     ports:
       - "6000:80"
