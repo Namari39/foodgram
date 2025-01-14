@@ -16,6 +16,8 @@ services:
       - pg_data:/var/lib/postgresql/data
       - media:/app/media/
       - static:/backend_static
+    depends_on:
+      - db
   frontend:
     container_name: foodgram-front
     image: foodgram_frontend
