@@ -12,7 +12,6 @@ from recipes.models import (
     ShoppingCart,
     Tag
 )
-from users.models import Subscription
 from users.serializers import UserDetailSerializer
 
 
@@ -20,18 +19,24 @@ User = get_user_model()
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор ингредиентв."""
+
     class Meta:
         model = Ingredient
         fields = ['id', 'name', 'measurement_unit']
 
 
 class TagSerializer(serializers.ModelSerializer):
+    """Сериализатор тегов."""
+
     class Meta:
         model = Tag
         fields = ['id', 'name', 'slug']
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
+    """Сериализатор связанных моделей."""
+
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient',
         queryset=Ingredient.objects.all()
@@ -49,6 +54,8 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    """Сериализатор рецептов."""
+
     ingredients = RecipeIngredientSerializer(many=True, required=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -184,47 +191,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class ShortRecipesSerializer(serializers.ModelSerializer):
+    """Упрощенный сериализатор для рецептов."""
+
     class Meta:
         model = Recipe
         fields = ['id', 'name', 'image', 'cooking_time']
-
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    recipes = ShortRecipesSerializer(many=True, read_only=True)
-    is_subscribed = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = [
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'avatar',
-            'recipes_count'
-        ]
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Subscription.objects.filter(
-                user=request.user, subscribed_to=obj
-            ).exists()
-        return False
-
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
-
-    def to_representation(self, instance):
-        recipes_limit = self.context[
-            'request'
-        ].query_params.get('recipes_limit')
-        representation = super().to_representation(instance)
-        if recipes_limit:
-            limit = int(recipes_limit)
-            representation['recipes'] = representation['recipes'][:limit]
-        return representation

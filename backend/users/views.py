@@ -19,6 +19,8 @@ User = get_user_model()
 
 
 class UserViewSet(UserViewSet):
+    """Вью для пользователей, унаследованная от djoser."""
+
     queryset = User.objects.all()
     serializer_class = UserDetailSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]

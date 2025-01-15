@@ -25,6 +25,8 @@ from recipes.models import (
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
+    """Вью функция для рецептов."""
+
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
@@ -188,6 +190,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(viewsets.ModelViewSet):
+    """Вью для тегов."""
+
     queryset = Tag.objects.all()
     permission_classes = [AllowAny]
     pagination_class = None
@@ -196,6 +200,8 @@ class TagViewSet(viewsets.ModelViewSet):
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
+    """Вью для ингредиентов."""
+
     queryset = Ingredient.objects.all()
     permission_classes = [AllowAny]
     pagination_class = None

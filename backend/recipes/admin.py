@@ -5,6 +5,8 @@ from recipes.models import Tag, Ingredient, Recipe, RecipeIngredient
 
 
 class RecipeIngredientInline(admin.TabularInline):
+    """Поле отображения ингредиентов в редактировании рецепта."""
+
     model = RecipeIngredient
     extra = 1
     fields = ('ingredient', 'amount',)
@@ -13,6 +15,8 @@ class RecipeIngredientInline(admin.TabularInline):
 
 
 class RecipeAdmin(admin.ModelAdmin):
+    """Админ панель рецептов."""
+
     search_fields = ['name', 'author__username']
     list_filter = ('tags',)
     list_select_related = ('author',)
@@ -31,6 +35,8 @@ class RecipeAdmin(admin.ModelAdmin):
 
 
 class IngredientAdmin(admin.ModelAdmin):
+    """Админ панель ингредиентов."""
+
     search_fields = ['name']
     list_display = ('name', 'measurement_unit')
 

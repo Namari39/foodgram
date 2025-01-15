@@ -14,6 +14,7 @@ User = get_user_model()
 
 
 class UserCreateSerializer(BaseUserCreateSerializer):
+    """Сериализатор для создания пользователей."""
 
     class Meta(BaseUserCreateSerializer.Meta):
         model = User
@@ -34,6 +35,8 @@ class UserCreateSerializer(BaseUserCreateSerializer):
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
+    """Сериализатор для просмотра деталей пользователя."""
+
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -68,6 +71,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 
 class AvatarSerializer(serializers.Serializer):
+    """Сериализатор для изменения аватара."""
+
     avatar = serializers.CharField()
 
     def to_internal_value(self, data):
@@ -81,12 +86,16 @@ class AvatarSerializer(serializers.Serializer):
 
 
 class ShortRecipesSerializer(serializers.ModelSerializer):
+    """Сокращенный сериализатор для рецептов в подписках."""
+
     class Meta:
         model = Recipe
         fields = ['id', 'name', 'image', 'cooking_time']
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор для подписок."""
+
     recipes = ShortRecipesSerializer(many=True, read_only=True)
     is_subscribed = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()

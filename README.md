@@ -1,4 +1,5 @@
-Находясь в папке infra, выполните команду docker-compose up. При выполнении этой команды контейнер frontend, описанный в docker-compose.yml, подготовит файлы, необходимые для работы фронтенд-приложения, а затем прекратит свою работу.
+[![Build Status](https://github.com/Namari39/foodgram/actions/workflows/main.yml/badge.svg)](https://github.com/Namari39/foodgram/actions)
 
-По адресу http://localhost изучите фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификацию API.
-
+kittygram_domain: https://yandexkittygram.ru
+taski_domain: https://yandextaski.zapto.org
+foodgram_domain: https://84.201.176.216

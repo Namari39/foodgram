@@ -7,6 +7,7 @@ User = get_user_model()
 
 
 class IngredientFilter(filters.FilterSet):
+    """Фильтр для вью ингредиенты."""
     name = filters.CharFilter(field_name='name', lookup_expr='istartswith')
 
     class Meta:
@@ -15,6 +16,7 @@ class IngredientFilter(filters.FilterSet):
 
 
 class RecipesFilter(filters.FilterSet):
+    """Фильтр для вью рецепты."""
     is_favorited = filters.BooleanFilter(method='filter_is_favorited')
     is_in_shopping_cart = filters.BooleanFilter(
         method='filter_is_in_shopping_cart'
