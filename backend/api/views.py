@@ -200,6 +200,19 @@ class IngredientViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     pagination_class = None
     serializer_class = IngredientSerializer
-    http_method_names = ['get']
+    http_method_names = ['get', 'post']
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
+
+    def create(self, request, *args, **kwargs):
+        ingredients_data = request.data
+        if isinstance(ingredients_data, list):
+            serializer = self.get_serializer(data=ingredients_data, many=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {"error": "Expected a list of ingredients."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
