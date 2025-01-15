@@ -148,7 +148,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             recipe = self.get_object()
             recipe_url = request.build_absolute_uri(
                 reverse('recipes-detail', kwargs={'pk': recipe.pk})
-            )
+            ).replace('/api', '')
             return Response(
                 {'short-link': recipe_url},
                 status=status.HTTP_200_OK
