@@ -213,6 +213,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(
-                {"error": "Expected a list of ingredients."},
+                {"error": "Expected list of ingredients."},
                 status=status.HTTP_400_BAD_REQUEST
             )
