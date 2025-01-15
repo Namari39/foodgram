@@ -9,4 +9,10 @@ urlpatterns = [
     re_path('auth/', include('djoser.urls.authtoken')),
     path('api/', include('api.urls')),
     path('api/', include('users.urls'))
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )
