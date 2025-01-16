@@ -1,0 +1,50 @@
+[
+    {
+        "model": "recipes.tag",
+        "pk": 1,
+        "fields": {
+            "name": "Завтрак",
+            "slug": "zavtrak"
+        }
+    },
+    {
+        "model": "recipes.tag",
+        "pk": 2,
+        "fields": {
+            "name": "Ужин",
+            "slug": "uzhin"
+        }
+    },
+    {
+        "model": "recipes.tag",
+        "pk": 3,
+        "fields": {
+            "name": "Вегетарианский",
+            "slug": "vegetarianskiy"
+        }
+    },
+    {
+        "model": "recipes.ingredient",
+        "pk": 1,
+        "fields": {
+            "name": "Морковь",
+            "measurement_unit": "шт"
+        }
+    },
+    {
+        "model": "recipes.ingredient",
+        "pk": 2,
+        "fields": {
+            "name": "Помидор",
+            "measurement_unit": "шт"
+        }
+    },
+    {
+        "model": "recipes.ingredient",
+        "pk": 3,
+        "fields": {
+            "name": "Соль",
+            "measurement_unit": "г"
+        }
+    }
+]

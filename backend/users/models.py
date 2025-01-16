@@ -1,17 +1,29 @@
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
+from users.managers import SuperUserManager
+import users.constants
 
 
 class User(AbstractUser):
     """Модель пользователей."""
 
-    email = models.EmailField(max_length=254, unique=True)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
+    email = models.EmailField(
+        max_length=users.constants.MAX_LEN_FIELDS,
+        unique=True
+    )
+    first_name = models.CharField(max_length=users.constants.MAX_LEN_NAME)
+    last_name = models.CharField(max_length=users.constants.MAX_LEN_NAME)
     avatar = models.ImageField(upload_to='users/', blank=True, null=True)
 
+    objects = SuperUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
     def __str__(self):
-        return self.username
+        return self.email
 
 
 class Subscription(models.Model):
@@ -28,3 +40,8 @@ class Subscription(models.Model):
 
     class Meta:
         unique_together = ('user', 'subscribed_to')
+
+    def save(self, *args, **kwargs):
+        if self.user == self.subscribed_to:
+            raise ValidationError("Вы не можете подписаться на самого себя.")
+        super().save(*args, **kwargs)

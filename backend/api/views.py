@@ -1,6 +1,6 @@
+import os
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
-from django.urls import reverse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
@@ -148,11 +148,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         try:
             recipe = self.get_object()
-            recipe_url = request.build_absolute_uri(
-                reverse('recipes-detail', kwargs={'pk': recipe.pk})
-            ).replace('/api', '')
+            link_suffix = recipe.short_link
+            full_short_link = (
+                f"{os.getenv('DOMAIN_NAME', 'localhost')}/s/{link_suffix}"
+            )
             return Response(
-                {'short-link': recipe_url},
+                {'short-link': full_short_link},
                 status=status.HTTP_200_OK
             )
         except Recipe.DoesNotExist:

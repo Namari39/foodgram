@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path('auth/', include('djoser.urls.authtoken')),
     path('api/', include('api.urls')),
-    path('api/', include('users.urls'))
+    path('api/', include('users.urls')),
 ]
 
 if settings.DEBUG:
