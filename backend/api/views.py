@@ -207,12 +207,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     pagination_class = None
     serializer_class = IngredientSerializer
-    http_method_names = ['get', 'post']
+    http_method_names = ['get']
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, many=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
