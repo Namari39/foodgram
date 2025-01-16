@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from rest_framework import status, viewsets
@@ -22,6 +23,9 @@ from recipes.models import (
     ShoppingCart,
     Tag,
 )
+
+
+load_dotenv()
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
