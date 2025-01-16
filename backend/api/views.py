@@ -154,7 +154,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
             recipe = self.get_object()
             link_suffix = recipe.short_link
             full_short_link = (
-                f"http://{os.getenv('DOMAIN_NAME', 'localhost')}/s/{link_suffix}"
+                f'''https://{os.getenv('DOMAIN_NAME',
+                'localhost')}/s/{link_suffix}'''
             )
             return Response(
                 {'short-link': full_short_link},
