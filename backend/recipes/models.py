@@ -12,9 +12,12 @@ User = get_user_model()
 class Tag(models.Model):
     """Модель тегов."""
 
-    name = models.CharField(max_length=constants.MAX_LEN_FIELD, unique=True)
+    name = models.CharField(
+        max_length=constants.MAX_LEN_FIELD_TAG,
+        unique=True
+    )
     slug = models.SlugField(
-        max_length=constants.MAX_LEN_FIELD,
+        max_length=constants.MAX_LEN_FIELD_TAG,
         unique=True,
         null=True
     )
@@ -31,8 +34,13 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     """Модель ингредиентов."""
 
-    name = models.CharField(max_length=constants.MAX_LEN_FIELD, unique=True)
-    measurement_unit = models.CharField(max_length=constants.MAX_LEN_FIELD)
+    name = models.CharField(
+        max_length=constants.MAX_LEN_FIELD_INGR,
+        unique=True
+    )
+    measurement_unit = models.CharField(
+        max_length=constants.MAX_LEN_FIELD_INGR
+    )
 
     def __str__(self):
         return self.name

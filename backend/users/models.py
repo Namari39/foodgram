@@ -25,6 +25,11 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
+    class Meta:
+        ordering = ['username']
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
 
 class Subscription(models.Model):
     """Модель подписок."""
