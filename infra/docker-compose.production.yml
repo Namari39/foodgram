@@ -25,7 +25,7 @@ services:
     volumes:
       - static:/static
   nginx:
-    container_name: foodgram-proxy
+    container_name: docker images
     env_file: .env
     image: namari39/foodgram_gateway
     ports:
