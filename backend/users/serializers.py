@@ -93,7 +93,7 @@ class ShortRecipesSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'image', 'cooking_time']
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
+class DetailSubscriptionSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
     recipes = ShortRecipesSerializer(many=True, read_only=True)
@@ -135,3 +135,31 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             limit = int(recipes_limit)
             representation['recipes'] = representation['recipes'][:limit]
         return representation
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user_to_manage = self.context.get('user_to_manage')
+        if user_to_manage == request.user:
+            raise serializers.ValidationError(
+                "Вы не можете подписаться на самого себя."
+            )
+        return attrs
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['user', 'subscribed_to']
+
+    def validate(self, data):
+        if data['user'] == data['subscribed_to']:
+            raise serializers.ValidationError(
+                "Вы не можете подписаться на самого себя."
+            )
+        return data
+
+    def create(self, validated_data):
+        subscription, created = Subscription.objects.get_or_create(
+            **validated_data
+        )
+        return subscription

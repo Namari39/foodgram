@@ -12,6 +12,7 @@ from users.serializers import (
     AvatarSerializer,
     SubscriptionSerializer,
     UserDetailSerializer,
+    DetailSubscriptionSerializer
 )
 
 
@@ -56,18 +57,13 @@ class UserViewSet(UserViewSet):
                 ) if user.avatar else None
             )
             return Response({'avatar': avatar_url}, status=status.HTTP_200_OK)
-        elif request.method == 'DELETE':
-            if user.avatar:
-                user.avatar.delete(save=False)
-                user.avatar = None
-                user.save()
-                return Response(
-                    {'detail': 'Аватар успешно удалён.'},
-                    status=status.HTTP_204_NO_CONTENT
-                )
+        if user.avatar:
+            user.avatar.delete(save=False)
+            user.avatar = None
+            user.save()
             return Response(
-                {'detail': 'Аватар не найден.'},
-                status=status.HTTP_404_NOT_FOUND
+                {'detail': 'Аватар успешно удален.'},
+                status=status.HTTP_204_NO_CONTENT
             )
 
     @action(
@@ -78,49 +74,33 @@ class UserViewSet(UserViewSet):
         pagination_class=LimitOffsetPagination
     )
     def manage_subscription(self, request, id=None):
-        user_to_manage = self.get_object()
-        if user_to_manage == request.user:
-            return Response(
-                {'detail': 'Нельзя подписываться на самого себя.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user_to_subscribe = self.get_object()
         if request.method == 'POST':
-            subscription, created = Subscription.objects.get_or_create(
-                user=request.user,
-                subscribed_to=user_to_manage
+            serializer = SubscriptionSerializer(data={
+                'user': request.user.id,
+                'subscribed_to': user_to_subscribe.id
+            })
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            detail_serializer = DetailSubscriptionSerializer(
+                user_to_subscribe,
+                context={'request': request}
             )
-            if created:
-                serializer = SubscriptionSerializer(
-                    user_to_manage,
-                    context={'request': request}
-                )
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
+            response_data = detail_serializer.data
+            response_data['is_subscribed'] = True
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        try:
+            subscription = Subscription.objects.get(
+                user=request.user,
+                subscribed_to=user_to_subscribe
+            )
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Subscription.DoesNotExist:
             return Response(
-                {'detail': 'Вы уже подписаны на этого пользователя.'},
+                {"detail": "Ваша подписка не найдена."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        elif request.method == 'DELETE':
-            subscription = Subscription.objects.filter(
-                user=request.user,
-                subscribed_to=user_to_manage
-            )
-            if subscription.exists():
-                subscription.delete()
-                return Response(
-                    {'detail': 'Подписка отменена.'},
-                    status=status.HTTP_204_NO_CONTENT
-                )
-            return Response(
-                {'detail': 'Подписки не существует.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        return Response(
-            {'detail': 'Некорректный метод запроса.'},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED
-        )
 
     @action(
         detail=False,
@@ -143,7 +123,7 @@ class UserViewSet(UserViewSet):
         )
         page = self.paginate_queryset(subscribed_users)
         if page is not None:
-            serializer = SubscriptionSerializer(
+            serializer = DetailSubscriptionSerializer(
                 page, many=True,
                 context={'request': request}
             )
