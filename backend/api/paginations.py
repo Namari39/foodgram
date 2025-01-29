@@ -1,8 +1,7 @@
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import PageNumberPagination
 
 
-class ApiPagination(LimitOffsetPagination):
+class ApiPagination(PageNumberPagination):
     """Пагинация для постов, с максимальным лимитом."""
 
-    default_limit = 10
-    max_limit = 100
+    page_size_query_param = 'limit'

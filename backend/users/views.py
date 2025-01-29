@@ -25,7 +25,6 @@ class UserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserDetailSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    pagination_class = LimitOffsetPagination
 
     @action(
         detail=False,
@@ -107,7 +106,6 @@ class UserViewSet(UserViewSet):
         methods=['get'],
         url_path='subscriptions',
         permission_classes=[IsAuthenticated],
-        pagination_class=LimitOffsetPagination
     )
     def subscriptions(self, request):
         subscriptions = Subscription.objects.filter(
