@@ -65,6 +65,26 @@ class RecipesViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @staticmethod
+    def add_to_list(request, recipe, model_class, success_message):
+        item, created = model_class.objects.get_or_create(
+            user=request.user,
+            recipe=recipe
+        )
+        if created:
+            serializer = ShortRecipesSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def remove_from_list(request, recipe, model_class):
+        try:
+            item = model_class.objects.get(user=request.user, recipe=recipe)
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except model_class.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
     @action(
         detail=True,
         methods=['post', 'delete'],
@@ -75,32 +95,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
         try:
             recipe = self.get_object()
             if request.method == 'POST':
-                created = FavoriteRecipe.objects.get_or_create(
-                    user=request.user,
-                    recipe=recipe
+                return self.add_to_list(
+                    request,
+                    recipe,
+                    FavoriteRecipe,
+                    'Рецепт уже в избранном!'
                 )
-                if created[1]:
-                    serializer = ShortRecipesSerializer(recipe)
-                    return Response(
-                        serializer.data, status=status.HTTP_201_CREATED
-                    )
-                else:
-                    return Response(
-                        {'message': 'Рецепт уже в избранном!'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            elif request.method == 'DELETE':
-                favorite_recipe = FavoriteRecipe.objects.get(
-                    user=request.user,
-                    recipe=recipe
-                )
-                favorite_recipe.delete()
-                return Response(
-                    {'message': 'Рецепт удален из избранного!'},
-                    status=status.HTTP_204_NO_CONTENT
-                )
-        except FavoriteRecipe.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return self.remove_from_list(request, recipe, FavoriteRecipe)
         except Recipe.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -114,32 +115,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
         try:
             recipe = self.get_object()
             if request.method == 'POST':
-                created = ShoppingCart.objects.get_or_create(
-                    user=request.user,
-                    recipe=recipe
+                return self.add_to_list(
+                    request,
+                    recipe,
+                    ShoppingCart,
+                    'Рецепт уже в списке покупок!'
                 )
-                if created[1]:
-                    serializer = ShortRecipesSerializer(recipe)
-                    return Response(
-                        serializer.data, status=status.HTTP_201_CREATED
-                    )
-                else:
-                    return Response(
-                        {'message': 'Рецепт уже в списке покупок!'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            elif request.method == 'DELETE':
-                shopping_cart_item = ShoppingCart.objects.get(
-                    user=request.user,
-                    recipe=recipe
-                )
-                shopping_cart_item.delete()
-                return Response(
-                    {'message': 'Рецепт удален из списка покупок!'},
-                    status=status.HTTP_204_NO_CONTENT
-                )
-        except ShoppingCart.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return self.remove_from_list(request, recipe, ShoppingCart)
         except Recipe.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -154,8 +136,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             recipe = self.get_object()
             link_suffix = recipe.short_link
             full_short_link = (
-                f'''https://{os.getenv('DOMAIN_NAME',
-                'localhost')}/s/{link_suffix}'''
+                f'''https://{os.getenv('DOMAIN_NAME')}/s/{link_suffix}'''
             )
             return Response(
                 {'short-link': full_short_link},

@@ -23,7 +23,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ingredient
-        fields = ['id', 'name', 'measurement_unit']
+        fields = '__all__'
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -31,7 +31,7 @@ class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ['id', 'name', 'slug']
+        fields = '__all__'
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
@@ -90,15 +90,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         ext = format.split('/')[-1]
         img = ContentFile(base64.b64decode(imgstr), name=f"recipe_image.{ext}")
         return img
-
-    def create(self, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
-        tags_data = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
-        for ingredient_data in ingredients_data:
-            RecipeIngredient.objects.create(recipe=recipe, **ingredient_data)
-        recipe.tags.set(tags_data)
-        return recipe
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -160,33 +151,34 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients', [])
-        tags_data = validated_data.pop('tags', [])
-        if len(ingredients_data) < 1:
-            raise serializers.ValidationError(
-                "Количество ингредиентов не может быть меньше 1."
-            )
-        ingredient_ids = [
-            ingredient['ingredient'] for ingredient in ingredients_data
-        ]
-        if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise serializers.ValidationError(
-                "Список ингредиентов содержит дубликаты."
-            )
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+    @staticmethod
+    def handle_ingredients_and_tags(instance, ingredients_data, tags_data):
         if ingredients_data:
             instance.ingredients.all().delete()
-            for ingredient_data in ingredients_data:
-                RecipeIngredient.objects.create(
-                    recipe=instance, **ingredient_data
-                )
+            recipe_ingredients = [
+                RecipeIngredient(recipe=instance, **ingredient_data)
+                for ingredient_data in ingredients_data
+            ]
+            RecipeIngredient.objects.bulk_create(recipe_ingredients)
         if tags_data:
-            tag_ids = [tag.id for tag in tags_data]
-            tag_objects = Tag.objects.filter(id__in=tag_ids)
-            instance.tags.set(tag_objects)
+            instance.tags.set(tags_data)
+
+    def create(self, validated_data):
+        ingredients_data = validated_data.pop('ingredients', [])
+        tags_data = validated_data.pop('tags', [])
+        recipe = Recipe.objects.create(**validated_data)
+        self.handle_ingredients_and_tags(recipe, ingredients_data, tags_data)
+        return recipe
+
+    def update(self, instance, validated_data):
+        ingredients_data = validated_data.get('ingredients', [])
+        tags_data = validated_data.get('tags', [])
+        non_nested_data = {
+            key: value for key, value in validated_data.items()
+            if key not in ['ingredients', 'tags']
+        }
+        instance = super().update(instance, non_nested_data)
+        self.handle_ingredients_and_tags(instance, ingredients_data, tags_data)
         return instance
 
 
