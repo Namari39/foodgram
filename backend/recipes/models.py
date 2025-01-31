@@ -62,6 +62,11 @@ class Recipe(models.Model):
     )
     name = models.CharField(max_length=constants.MAX_LEN_NAME)
     tags = models.ManyToManyField(Tag)
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        through='RecipeIngredient',
+        related_name='recipes'
+    )
     image = models.ImageField(upload_to='recipes/', null=False, blank=False)
     text = models.TextField()
     cooking_time = models.PositiveIntegerField(
@@ -101,7 +106,7 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='ingredients'
+        related_name='recipe_ingredients'
     )
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(
@@ -110,11 +115,14 @@ class RecipeIngredient(models.Model):
         validators=[MinValueValidator(constants.MIN_VALIDATORS)]
     )
 
+    def __str__(self):
+        return f'''{self.ingredient.name}
+                ({self.amount} г) для {self.recipe.name}'''
+
     class Meta:
         unique_together = ('recipe', 'ingredient')
-        ordering = ['ingredient']
         verbose_name = 'Ингредиент рецепта'
-        verbose_name_plural = 'Ингредиенты рецепта'
+        verbose_name_plural = 'Ингредиенты рецептов'
 
 
 class BaseRecipeRelationship(models.Model):

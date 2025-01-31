@@ -11,7 +11,9 @@ from api.filters import IngredientFilter, RecipesFilter
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     IngredientSerializer,
-    RecipeSerializer,
+    RecipeCreateSerializer,
+    FavoriteRecipeSerializer,
+    ShoppingCartSerializer,
     ShortRecipesSerializer,
     TagSerializer,
 )
@@ -31,48 +33,41 @@ class RecipesViewSet(viewsets.ModelViewSet):
     """Вью функция для рецептов."""
 
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = RecipeCreateSerializer
     permission_classes = [IsAuthorOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipesFilter
-
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def partial_update(self, request, *args, **kwargs):
-        recipe = self.get_object()
-        serializer = self.get_serializer(
-            recipe, data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def update(self, request, *args, **kwargs):
-        recipe = self.get_object()
-        serializer = self.get_serializer(
-            recipe, data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    http_method_names = ['get', 'post', 'delete', 'patch']
 
     @staticmethod
-    def add_to_list(request, recipe, model_class, success_message):
-        item, created = model_class.objects.get_or_create(
-            user=request.user,
-            recipe=recipe
-        )
-        if created:
-            serializer = ShortRecipesSerializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    def add_to_list(
+        request,
+        recipe,
+        model_class,
+        serializer_class,
+        success_message
+    ):
+        data = {
+            'user': request.user.id,
+            'recipe': recipe.id
+        }
+        serializer = serializer_class(data=data, context={'request': request})
+        if serializer.is_valid():
+            if not model_class.objects.filter(
+                user=request.user,
+                recipe=recipe
+            ).exists():
+                serializer.save()
+                recipe_serializer = ShortRecipesSerializer(recipe)
+                return Response(
+                    recipe_serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(
+                {'detail': success_message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def remove_from_list(request, recipe, model_class):
@@ -81,7 +76,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
             item.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except model_class.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Рецепт не найден в списке.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
         detail=True,
@@ -97,11 +95,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
                     request,
                     recipe,
                     FavoriteRecipe,
+                    FavoriteRecipeSerializer,
                     'Рецепт уже в избранном!'
                 )
             return self.remove_from_list(request, recipe, FavoriteRecipe)
         except Recipe.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Рецепт не найден.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
         detail=True,
@@ -117,11 +119,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
                     request,
                     recipe,
                     ShoppingCart,
+                    ShoppingCartSerializer,
                     'Рецепт уже в списке покупок!'
                 )
             return self.remove_from_list(request, recipe, ShoppingCart)
         except Recipe.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Рецепт не найден.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(
         detail=True,
@@ -150,23 +156,26 @@ class RecipesViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def download_shopping_cart(self, request):
-        user_recipes = request.user.recipes.all()
+        """
+        Скачивание списка покупок.
+        """
+        shopping_cart_recipes = request.user.recipes.all()
         ingredients = {}
-
-        for recipe in user_recipes:
-            for recipe_ingredient in recipe.ingredients.all():
+        for recipe in shopping_cart_recipes:
+            for recipe_ingredient in recipe.recipe_ingredients.all():
                 ingredient_name = recipe_ingredient.ingredient.name
+                measurement_unit = (
+                    recipe_ingredient.ingredient.measurement_unit
+                )
                 amount = recipe_ingredient.amount
-                if ingredient_name in ingredients:
-                    ingredients[ingredient_name] += amount
+                key = f"{ingredient_name} ({measurement_unit})"
+                if key in ingredients:
+                    ingredients[key] += amount
                 else:
-                    ingredients[ingredient_name] = amount
-        response_content = ""
+                    ingredients[key] = amount
+        response_content = "Список покупок:\n\n"
         for ingredient, amount in ingredients.items():
-            measurement_unit = recipe_ingredient.ingredient.measurement_unit
-            response_content += (
-                f"{ingredient} ({measurement_unit}) — {amount}\n"
-            )
+            response_content += f"{ingredient} — {amount}\n"
         response = HttpResponse(response_content, content_type='text/plain')
         response['Content-Disposition'] = (
             'attachment; filename="shopping_cart.txt"'
@@ -174,23 +183,21 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return response
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """Вью для тегов."""
 
     queryset = Tag.objects.all()
     permission_classes = [AllowAny]
     pagination_class = None
     serializer_class = TagSerializer
-    http_method_names = ['get']
 
 
-class IngredientViewSet(viewsets.ModelViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вью для ингредиентов."""
 
     queryset = Ingredient.objects.all()
     permission_classes = [AllowAny]
     pagination_class = None
     serializer_class = IngredientSerializer
-    http_method_names = ['get']
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
