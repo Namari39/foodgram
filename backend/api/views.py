@@ -45,7 +45,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
         recipe,
         model_class,
         serializer_class,
-        success_message
     ):
         data = {
             'user': request.user.id,
@@ -53,19 +52,11 @@ class RecipesViewSet(viewsets.ModelViewSet):
         }
         serializer = serializer_class(data=data, context={'request': request})
         if serializer.is_valid():
-            if not model_class.objects.filter(
-                user=request.user,
-                recipe=recipe
-            ).exists():
-                serializer.save()
-                recipe_serializer = ShortRecipesSerializer(recipe)
-                return Response(
-                    recipe_serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
+            serializer.save()
+            recipe_serializer = ShortRecipesSerializer(recipe)
             return Response(
-                {'detail': success_message},
-                status=status.HTTP_400_BAD_REQUEST
+                recipe_serializer.data,
+                status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -88,22 +79,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def favorite(self, request, pk=None):
-        try:
-            recipe = self.get_object()
-            if request.method == 'POST':
-                return self.add_to_list(
-                    request,
-                    recipe,
-                    FavoriteRecipe,
-                    FavoriteRecipeSerializer,
-                    'Рецепт уже в избранном!'
-                )
-            return self.remove_from_list(request, recipe, FavoriteRecipe)
-        except Recipe.DoesNotExist:
-            return Response(
-                {'detail': 'Рецепт не найден.'},
-                status=status.HTTP_400_BAD_REQUEST
+        recipe = self.get_object()
+        if request.method == 'POST':
+            return self.add_to_list(
+                request,
+                recipe,
+                FavoriteRecipe,
+                FavoriteRecipeSerializer
             )
+        return self.remove_from_list(request, recipe, FavoriteRecipe)
 
     @action(
         detail=True,
@@ -112,22 +96,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def shopping_cart(self, request, pk=None):
-        try:
-            recipe = self.get_object()
-            if request.method == 'POST':
-                return self.add_to_list(
-                    request,
-                    recipe,
-                    ShoppingCart,
-                    ShoppingCartSerializer,
-                    'Рецепт уже в списке покупок!'
-                )
-            return self.remove_from_list(request, recipe, ShoppingCart)
-        except Recipe.DoesNotExist:
-            return Response(
-                {'detail': 'Рецепт не найден.'},
-                status=status.HTTP_400_BAD_REQUEST
+        recipe = self.get_object()
+        if request.method == 'POST':
+            return self.add_to_list(
+                request,
+                recipe,
+                ShoppingCart,
+                ShoppingCartSerializer
             )
+        return self.remove_from_list(request, recipe, ShoppingCart)
 
     @action(
         detail=True,
@@ -156,12 +133,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def download_shopping_cart(self, request):
-        """
-        Скачивание списка покупок.
-        """
-        shopping_cart_recipes = request.user.recipes.all()
+        shopping_cart_recipes = ShoppingCart.objects.filter(user=request.user)
         ingredients = {}
-        for recipe in shopping_cart_recipes:
+        for shopping_cart in shopping_cart_recipes:
+            recipe = shopping_cart.recipe
             for recipe_ingredient in recipe.recipe_ingredients.all():
                 ingredient_name = recipe_ingredient.ingredient.name
                 measurement_unit = (
